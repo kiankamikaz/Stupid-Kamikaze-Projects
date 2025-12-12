@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netlify Project Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @theme {
+            --color-slate-950: #020617;
+        }
+        /* This tells Tailwind 4 to use the .dark class for dark mode */
+        @variant dark (&:where(.dark, .dark *));
+
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
+
+    <!-- Sidebar / Scanner Panel -->
+    <div id="scannerPanel" class="fixed top-0 right-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl transform translate-x-full transition-transform duration-300 z-50 p-6 flex flex-col border-l dark:border-slate-800">
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-xl font-bold text-slate-800 dark:text-white">Discover Files</h2>
+            <button onclick="toggleScanner()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <div class="space-y-6 flex-1 overflow-y-auto custom-scrollbar pr-2">
+            <div>
+                <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Manual Add</label>
+                <input id="manualName" type="text" placeholder="Project Name" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg mb-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <input id="manualPath" type="text" placeholder="filename.html" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg mb-2 focus:ring-2 focus:ring-indigo-500 outline-none">
+                <button onclick="manualAdd()" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-colors font-medium">Add to Dashboard</button>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 dark:border-slate-800">
+                <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Auto-Scan Directory</label>
+                <p class="text-xs text-slate-500 dark:text-slate-500 mb-4">Checks if common filenames exist in your current folder.</p>
+                <button onclick="runAutoScan()" id="scanBtn" class="w-full border-2 border-indigo-600 text-indigo-600 py-2 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors font-medium flex items-center justify-center gap-2">
+                    <svg id="scanIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="14.31" y1="8" x2="20.05" y2="17.94"></line><line x1="9.69" y1="8" x2="21.17" y2="8"></line><line x1="7.38" y1="12" x2="13.12" y2="2.06"></line><line x1="9.69" y1="16" x2="3.95" y2="6.06"></line><line x1="14.31" y1="16" x2="2.83" y2="16"></line><line x1="16.62" y1="12" x2="10.88" y2="21.94"></line></svg>
+                    Start Scan
+                </button>
+                <div id="scanResults" class="mt-4 max-h-40 overflow-y-auto space-y-2 text-sm custom-scrollbar"></div>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 dark:border-slate-800">
+                <label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Bulk Discovery</label>
+                <textarea id="bulkPaths" placeholder="page1.html&#10;page2.html&#10;sub/other.html" class="w-full p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg mb-2 focus:ring-2 focus:ring-indigo-500 outline-none text-xs h-24 font-mono"></textarea>
+                <button onclick="bulkAdd()" class="w-full bg-slate-800 dark:bg-slate-700 text-white py-2 rounded-lg hover:bg-slate-900 dark:hover:bg-slate-600 transition-colors text-sm font-medium">Bulk Add & Verify</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-12">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight transition-colors">Netlify Project Hub</h1>
+                <p class="text-slate-500 dark:text-slate-400 mt-1">Manage and launch all HTML pages in this project.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleDarkMode()" id="themeToggle" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-amber-400 rounded-xl shadow-md border-2 border-indigo-700 dark:border-amber-500 text-white dark:text-amber-950 hover:scale-105 active:scale-95 transition-all font-bold z-[60]">
+                    <svg id="sunIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                    <span id="themeText">Dark Mode</span>
+                </button>
+                <button onclick="toggleScanner()" class="flex items-center gap-2 bg-white dark:bg-slate-900 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:shadow-md transition-all font-medium text-slate-700 dark:text-slate-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    Manage Projects
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Active Pages</p>
+                <h3 id="statTotal" class="text-3xl font-bold text-slate-800 dark:text-white mt-1">0</h3>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Last Scanned</p>
+                <h3 id="statLastScan" class="text-3xl font-bold text-slate-800 dark:text-white mt-1">Never</h3>
+            </div>
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+                <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Deployment</p>
+                <h3 class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mt-1 flex items-center gap-2">
+                    Netlify
+                    <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                </h3>
+            </div>
+        </div>
+
+        <!-- Project Grid -->
+        <div id="projectGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Projects will be injected here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-20 h-20 bg-slate-100 dark:bg-slate-900 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-white">No projects detected yet</h3>
+            <p class="text-slate-500 dark:text-slate-400 max-w-xs mx-auto mt-2">Use the scanner or add your HTML files manually to build your dashboard.</p>
+            <button onclick="toggleScanner()" class="mt-6 text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">Open Discovery Panel</button>
+        </div>
+    </div>
+
+    <!-- Runner Modal -->
+    <div id="runnerModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[100] hidden items-center justify-center p-4 md:p-8">
+        <div class="bg-white dark:bg-slate-900 w-full h-full rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 transition-colors">
+                <div class="flex items-center gap-4">
+                    <h2 id="runnerTitle" class="font-bold text-slate-800 dark:text-white truncate max-w-[200px]">Running Project</h2>
+                    <span id="runnerUrl" class="text-xs text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-1 rounded">path.html</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="runnerNewTab" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 transition-colors" title="Open in New Tab">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                    </button>
+                    <button onclick="closeRunner()" class="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 rounded-lg text-slate-600 dark:text-slate-400 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 bg-slate-200 dark:bg-slate-950 relative">
+                <iframe id="runnerFrame" src="" class="w-full h-full border-none bg-white dark:bg-white"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let projects = JSON.parse(localStorage.getItem('netlify_hub_projects')) || [];
+        const commonFiles = [
+            'about.html', 'contact.html', 'project.html', 'projects.html', 
+            'portfolio.html', 'blog.html', 'admin.html', 'dashboard.html', 
+            'page1.html', 'page2.html', 'test.html', 'demo.html', 
+            'app.html', 'home.html', 'main.html'
+        ];
+
+        function init() {
+            initTheme();
+            renderProjects();
+            updateStats();
+        }
+
+        function initTheme() {
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                updateThemeIcons(true);
+            } else {
+                document.documentElement.classList.remove('dark');
+                updateThemeIcons(false);
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            updateThemeIcons(isDark);
+        }
+
+        function updateThemeIcons(isDark) {
+            const sunIcon = document.getElementById('sunIcon');
+            const moonIcon = document.getElementById('moonIcon');
+            const themeText = document.getElementById('themeText');
+            if (isDark) {
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+                themeText.innerText = 'Light Mode';
+            } else {
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+                themeText.innerText = 'Dark Mode';
+            }
+        }
+
+        function toggleScanner() {
+            const panel = document.getElementById('scannerPanel');
+            panel.classList.toggle('translate-x-full');
+        }
+
+        function renderProjects() {
+            const grid = document.getElementById('projectGrid');
+            const empty = document.getElementById('emptyState');
+            
+            if (projects.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            grid.classList.remove('hidden');
+            empty.classList.add('hidden');
+            grid.innerHTML = '';
+
+            projects.forEach((proj, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-fade-in group';
+                card.style.animationDelay = `${index * 0.05}s`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        </div>
+                        <button onclick="deleteProject(${index})" class="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-500 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </div>
+                    <h4 class="font-bold text-slate-800 dark:text-white truncate mb-1">${proj.name}</h4>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 font-mono mb-6">${proj.path}</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="runProject('${proj.path}', '${proj.name}')" class="bg-slate-900 dark:bg-slate-800 text-white text-xs font-bold py-2 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 transition-colors">RUN</button>
+                        <a href="${proj.path}" target="_blank" class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold py-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center">NEW TAB</a>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('statTotal').innerText = projects.length;
+            const lastScan = localStorage.getItem('netlify_hub_last_scan');
+            if (lastScan) {
+                document.getElementById('statLastScan').innerText = lastScan;
+            }
+        }
+
+        function manualAdd() {
+            const name = document.getElementById('manualName').value.trim();
+            const path = document.getElementById('manualPath').value.trim();
+
+            if (!name || !path) {
+                alert('Please fill in both fields');
+                return;
+            }
+
+            addProject(name, path);
+            document.getElementById('manualName').value = '';
+            document.getElementById('manualPath').value = '';
+        }
+
+        function addProject(name, path) {
+            // Avoid duplicates
+            if (projects.some(p => p.path === path)) {
+                return false;
+            }
+
+            projects.push({ name, path });
+            saveProjects();
+            renderProjects();
+            updateStats();
+            return true;
+        }
+
+        function deleteProject(index) {
+            projects.splice(index, 1);
+            saveProjects();
+            renderProjects();
+            updateStats();
+        }
+
+        function saveProjects() {
+            localStorage.setItem('netlify_hub_projects', JSON.stringify(projects));
+        }
+
+        async function runAutoScan() {
+            const btn = document.getElementById('scanBtn');
+            const icon = document.getElementById('scanIcon');
+            const results = document.getElementById('scanResults');
+            
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            icon.classList.add('animate-spin');
+            results.innerHTML = '<p class="text-indigo-600 dark:text-indigo-400 animate-pulse">Scanning files...</p>';
+
+            let foundCount = 0;
+            const existingPaths = projects.map(p => p.path);
+
+            for (const file of commonFiles) {
+                try {
+                    if (file === 'index.html' || existingPaths.includes(file)) continue;
+
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        addProject(file.replace('.html', '').toUpperCase(), file);
+                        results.innerHTML += `<p class="text-green-500 font-medium">✓ Found: ${file}</p>`;
+                        foundCount++;
+                    }
+                } catch (e) {}
+            }
+
+            if (foundCount === 0) {
+                results.innerHTML += '<p class="text-slate-400 dark:text-slate-500">No new files detected.</p>';
+            }
+
+            const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            localStorage.setItem('netlify_hub_last_scan', now);
+            
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+            icon.classList.remove('animate-spin');
+            updateStats();
+        }
+
+        async function bulkAdd() {
+            const text = document.getElementById('bulkPaths').value;
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const results = document.getElementById('scanResults');
+            results.innerHTML = '<p class="text-indigo-600 dark:text-indigo-400 animate-pulse">Verifying bulk list...</p>';
+
+            let addedCount = 0;
+            for (const path of lines) {
+                try {
+                    const response = await fetch(path, { method: 'HEAD' });
+                    if (response.ok) {
+                        const name = path.split('/').pop().replace('.html', '').toUpperCase();
+                        if (addProject(name, path)) addedCount++;
+                    } else {
+                        results.innerHTML += `<p class="text-red-400">✗ Not found: ${path}</p>`;
+                    }
+                } catch (e) {
+                    results.innerHTML += `<p class="text-red-400">✗ Error: ${path}</p>`;
+                }
+            }
+
+            results.innerHTML += `<p class="text-slate-800 dark:text-slate-200 font-bold mt-2">Finished: Added ${addedCount} projects.</p>`;
+            document.getElementById('bulkPaths').value = '';
+            updateStats();
+        }
+
+        function runProject(path, name) {
+            const modal = document.getElementById('runnerModal');
+            const frame = document.getElementById('runnerFrame');
+            const title = document.getElementById('runnerTitle');
+            const urlText = document.getElementById('runnerUrl');
+            const newTabBtn = document.getElementById('runnerNewTab');
+
+            title.innerText = name;
+            urlText.innerText = path;
+            frame.src = path;
+            newTabBtn.onclick = () => window.open(path, '_blank');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRunner() {
+            const modal = document.getElementById('runnerModal');
+            const frame = document.getElementById('runnerFrame');
+            
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            frame.src = '';
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal on background click
+        document.getElementById('runnerModal').addEventListener('click', (e) => {
+            if (e.target.id === 'runnerModal') closeRunner();
+        });
+
+        init();
+    </script>
+</body>
+</html>
