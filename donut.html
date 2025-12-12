@@ -32,9 +32,27 @@
             color: #555;
             font-size: 0.8rem;
         }
+        .return-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            color: #555;
+            border: none;
+            cursor: pointer;
+            font-family: 'monospace';
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .return-button:hover {
+            color: #555;
+        }
     </style>
 </head>
 <body class="bg-black">
+
+    <a href="index.html" class="return-button">return</a>
 
     <div class="flex flex-col items-center">
         <pre id="canvas"></pre>
