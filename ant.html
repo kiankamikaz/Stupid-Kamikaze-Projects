@@ -154,9 +154,27 @@
             0%, 100% { transform: scaleY(1); }
             50% { transform: scaleY(1.02); }
         }
+
+        .return-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            color: #555;
+            border: none;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .return-button:hover {
+            color: #555;
+        }
     </style>
 </head>
 <body>
+    <a href="index.html" class="return-button">return</a>
     <div class="ant-container" id="ant">
         <div class="ant-display" id="antDisplay"></div>
     </div>
