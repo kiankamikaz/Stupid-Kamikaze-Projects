@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Rotating Donut</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        body {
+            background-color: #000;
+            color: #0f0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'monospace';
+        }
+        #canvas {
+            line-height: 10px;
+            font-size: 10px;
+            cursor: default;
+            user-select: none;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: #555;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="bg-black">
+
+    <div class="flex flex-col items-center">
+        <pre id="canvas"></pre>
+        <div class="controls mt-8">
+            <p>made by kiankamikaze</p>
+        </div>
+    </div>
+
+    <script>
+        const pre = document.getElementById('canvas');
+
+        let A = 0;
+        let B = 0;
+
+        const renderFrame = () => {
+            const b = [];
+            const z = [];
+            const width = 80;
+            const height = 40;
+            
+            // Initialize buffers
+            for (let k = 0; k < width * height; k++) {
+                b[k] = " ";
+                z[k] = 0;
+            }
+
+            // Loop through the torus
+            for (let j = 0; j < 6.28; j += 0.07) { // theta
+                for (let i = 0; i < 6.28; i += 0.02) { // phi
+                    const c = Math.sin(i);
+                    const d = Math.cos(j);
+                    const e = Math.sin(A);
+                    const f = Math.sin(j);
+                    const g = Math.cos(A);
+                    const h = d + 2;
+                    const D = 1 / (c * h * e + f * g + 5);
+                    const l = Math.cos(i);
+                    const m = Math.cos(B);
+                    const n = Math.sin(B);
+                    const t = c * h * g - f * e;
+
+                    const x = Math.floor(width / 2 + 30 * D * (l * h * m - t * n));
+                    const y = Math.floor(height / 2 + 15 * D * (l * h * n + t * m));
+                    const o = x + width * y;
+                    const N = Math.floor(8 * ((f * e - c * d * g) * m - c * d * e - f * g - l * d * n));
+
+                    if (height > y && y > 0 && x > 0 && width > x && D > z[o]) {
+                        z[o] = D;
+                        b[o] = ".,-~:;=!*#$@"[N > 0 ? N : 0];
+                    }
+                }
+            }
+
+            // Build string
+            let output = "";
+            for (let k = 0; k < width * height; k++) {
+                output += k % width === width - 1 ? b[k] + "\n" : b[k];
+            }
+            
+            pre.innerHTML = output;
+            pre.style.color = `hsl(${(A * 50) % 360}, 100%, 70%)`;
+
+            A += 0.04;
+            B += 0.02;
+
+            requestAnimationFrame(renderFrame);
+        };
+
+        renderFrame();
+    </script>
+</body>
+</html>
