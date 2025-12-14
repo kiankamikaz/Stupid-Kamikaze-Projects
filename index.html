@@ -114,4 +114,32 @@
     function checkAndOpenDonut() {
       fetch('donut.html')
         .then(response => {
-          if (response.status
+          if (response.status === 200) {
+            window.location.href = 'donut.html';
+          } else {
+            alert('Donut page not found!');
+          }
+        })
+        .catch(error => {
+          console.error('Error checking for donut.html:', error);
+          alert('Error checking for Donut page.');
+        });
+    }
+
+    function checkAndOpenSpider() {
+      fetch('spider.html')
+        .then(response => {
+          if (response.status === 200) {
+            window.location.href = 'spider.html';
+          } else {
+            alert('Spider page not found!');
+          }
+        })
+        .catch(error => {
+          console.error('Error checking for spider.html:', error);
+          alert('Error checking for Spider page.');
+        });
+    }
+  </script>
+</body>
+</html>
