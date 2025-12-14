@@ -87,6 +87,11 @@
         <h2 style="color:#c0d8ff!important;">Donut</h2>
         <p style="color:#6a8cba!important;">Cool RGB Donut Rotating</p>
       </div>
+      <div style="height:1rem!important;"></div>
+      <div class="button" onclick="checkAndOpenSpider()" style="background:#0f1a2e!important;background-color:#0f1a2e!important;">
+        <h2 style="color:#c0d8ff!important;">Spider</h2>
+        <p style="color:#6a8cba!important;">Living creature following your mouse</p>
+      </div>
     </div>
   </div>
 
@@ -109,17 +114,4 @@
     function checkAndOpenDonut() {
       fetch('donut.html')
         .then(response => {
-          if (response.status === 200) {
-            window.location.href = 'donut.html';
-          } else {
-            alert('Donut page not found!');
-          }
-        })
-        .catch(error => {
-          console.error('Error checking for donut.html:', error);
-          alert('Error checking for Donut page.');
-        });
-    }
-  </script>
-</body>
-</html>
+          if (response.status
